@@ -19,16 +19,18 @@ const parameters = z.object({
     .string()
     .optional()
     .describe("Message to send to a Jules session (required for send_message)"),
-  owner: z
+  source: z
     .string()
     .optional()
-    .describe("GitHub repository owner (required for create_session)"),
-  repo: z
-    .string()
-    .optional()
-    .describe("GitHub repository name (required for create_session)"),
-  branch: z.string().optional().describe("GitHub branch name (optional for create_session)"),
+    .describe(
+      "The Jules source name for the target repository (required for create_session). Use list_sources to find available source names.",
+    ),
+  branch: z.string().optional().describe("GitHub starting branch name (optional for create_session)"),
   title: z.string().optional().describe("Session title (optional for create_session)"),
+  auto_create_pr: z
+    .boolean()
+    .optional()
+    .describe("Automatically create a pull request when the session completes (optional for create_session)"),
   page_size: z.number().optional().describe("Number of results to return (optional for list operations)"),
 })
 
@@ -65,49 +67,58 @@ export const JulesTool = Tool.define<typeof parameters, JulesMetadata>("jules", 
         }
         const formatted = sources
           .map((s) => {
-            const gh = s.sourceContext?.github
-            const repoInfo = gh ? `${gh.owner}/${gh.repo}${gh.branch ? ` (${gh.branch})` : ""}` : "unknown"
-            return `- ${s.displayName ?? s.name}: ${repoInfo}`
+            const gh = s.githubRepo
+            const repoInfo = gh ? `${gh.owner}/${gh.repo}` : "unknown"
+            return `- ${s.name} (${repoInfo})`
           })
           .join("\n")
         return {
           title: `Jules: ${sources.length} source(s)`,
           metadata: { action: "list_sources", count: sources.length },
-          output: `Connected repositories:\n${formatted}`,
+          output: `Connected repositories:\n${formatted}\n\nUse the "name" field as the "source" parameter when creating a session.`,
         }
       }
 
       case "create_session": {
         if (!params.prompt) throw new Error("'prompt' is required for create_session")
-        if (!params.owner || !params.repo) throw new Error("'owner' and 'repo' are required for create_session")
+        if (!params.source) throw new Error("'source' is required for create_session. Use list_sources to find available sources.")
 
         const session = await JulesClient.createSession({
           prompt: params.prompt,
           sourceContext: {
-            github: {
-              owner: params.owner,
-              repo: params.repo,
-              branch: params.branch,
-            },
+            source: params.source,
+            ...(params.branch
+              ? { githubRepoContext: { startingBranch: params.branch } }
+              : {}),
           },
           title: params.title,
+          automationMode: params.auto_create_pr ? "AUTO_CREATE_PR" : undefined,
         })
+
+        const outputLines = [
+          `Jules session created successfully.`,
+          `Session: ${session.name}`,
+          session.id ? `ID: ${session.id}` : "",
+          session.title ? `Title: ${session.title}` : "",
+          session.state ? `State: ${session.state}` : "",
+          ``,
+          `Jules will now analyze the repository and generate a plan.`,
+          `Use action "get_activities" with session_id="${session.name}" to check progress.`,
+          `Use action "approve_plan" when Jules has a plan ready for approval.`,
+        ]
+
+        if (session.outputs?.length) {
+          for (const output of session.outputs) {
+            if (output.pullRequest?.url) {
+              outputLines.push(`Pull Request: ${output.pullRequest.url}`)
+            }
+          }
+        }
 
         return {
           title: `Jules: Session created`,
           metadata: { action: "create_session", session: session.name },
-          output: [
-            `Jules session created successfully.`,
-            `Session ID: ${session.name}`,
-            session.title ? `Title: ${session.title}` : "",
-            session.state ? `State: ${session.state}` : "",
-            ``,
-            `Jules will now analyze the repository and generate a plan.`,
-            `Use action "get_activities" with this session_id to check progress.`,
-            `Use action "approve_plan" when Jules has a plan ready for approval.`,
-          ]
-            .filter(Boolean)
-            .join("\n"),
+          output: outputLines.filter(Boolean).join("\n"),
         }
       }
 

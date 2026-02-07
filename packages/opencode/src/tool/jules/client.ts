@@ -5,24 +5,37 @@ import { Log } from "../../util/log"
 export namespace JulesClient {
   const log = Log.create({ service: "jules" })
 
-  const BASE_URL = "https://jules.google/api/v1alpha"
+  export const BASE_URL = "https://julius.googleapis.com/v1alpha"
 
   export interface Source {
     name: string
-    displayName?: string
-    sourceContext?: {
-      github?: {
-        owner: string
-        repo: string
-        branch?: string
-      }
+    id: string
+    githubRepo?: {
+      owner: string
+      repo: string
+    }
+  }
+
+  export interface SessionOutput {
+    pullRequest?: {
+      url: string
+      title?: string
     }
   }
 
   export interface Session {
     name: string
+    id?: string
     title?: string
     state?: string
+    prompt?: string
+    sourceContext?: {
+      source: string
+      githubRepoContext?: {
+        startingBranch?: string
+      }
+    }
+    outputs?: SessionOutput[]
     createTime?: string
     updateTime?: string
   }
@@ -36,19 +49,18 @@ export namespace JulesClient {
 
   export interface CreateSessionInput {
     prompt: string
-    sourceContext?: {
-      github?: {
-        owner: string
-        repo: string
-        branch?: string
+    sourceContext: {
+      source: string
+      githubRepoContext?: {
+        startingBranch?: string
       }
     }
     title?: string
-    automationMode?: string
+    automationMode?: "AUTO_CREATE_PR"
     requirePlanApproval?: boolean
   }
 
-  async function getApiKey(): Promise<string> {
+  export async function getApiKey(): Promise<string> {
     const envKey = Env.get("JULES_API_KEY")
     if (envKey) return envKey
 
@@ -61,7 +73,7 @@ export namespace JulesClient {
     )
   }
 
-  async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  export async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
     const apiKey = await getApiKey()
     const url = `${BASE_URL}${path}`
 
@@ -87,7 +99,7 @@ export namespace JulesClient {
   }
 
   export async function listSources(): Promise<Source[]> {
-    const result = await request<{ sources?: Source[] }>("GET", "/sources")
+    const result = await request<{ sources?: Source[]; nextPageToken?: string }>("GET", "/sources")
     return result.sources ?? []
   }
 
@@ -97,7 +109,10 @@ export namespace JulesClient {
 
   export async function listSessions(pageSize?: number): Promise<Session[]> {
     const params = pageSize ? `?pageSize=${pageSize}` : ""
-    const result = await request<{ sessions?: Session[] }>("GET", `/sessions${params}`)
+    const result = await request<{ sessions?: Session[]; nextPageToken?: string }>(
+      "GET",
+      `/sessions${params}`,
+    )
     return result.sessions ?? []
   }
 
@@ -106,7 +121,7 @@ export namespace JulesClient {
     pageSize?: number,
   ): Promise<Activity[]> {
     const params = pageSize ? `?pageSize=${pageSize}` : ""
-    const result = await request<{ activities?: Activity[] }>(
+    const result = await request<{ activities?: Activity[]; nextPageToken?: string }>(
       "GET",
       `/sessions/${sessionId}/activities${params}`,
     )
@@ -119,7 +134,7 @@ export namespace JulesClient {
 
   export async function sendMessage(sessionId: string, message: string): Promise<Session> {
     return request<Session>("POST", `/sessions/${sessionId}:sendMessage`, {
-      message,
+      prompt: message,
     })
   }
 }
