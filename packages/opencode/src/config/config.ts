@@ -639,6 +639,7 @@ export namespace Config {
           lsp: PermissionRule.optional(),
           doom_loop: PermissionAction.optional(),
           skill: PermissionRule.optional(),
+          jules: PermissionRule.optional(),
         })
         .catchall(PermissionRule)
         .or(PermissionAction),
@@ -1177,6 +1178,12 @@ export namespace Config {
             .positive()
             .optional()
             .describe("Timeout in milliseconds for model context protocol (MCP) requests"),
+          jules: z
+            .object({
+              api_key: z.string().optional().describe("Jules API key (can also be set via JULES_API_KEY env var)"),
+            })
+            .optional()
+            .describe("Jules autonomous coding agent integration (experimental)"),
         })
         .optional(),
     })
