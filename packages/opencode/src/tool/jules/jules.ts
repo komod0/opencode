@@ -32,7 +32,14 @@ const parameters = z.object({
   page_size: z.number().optional().describe("Number of results to return (optional for list operations)"),
 })
 
-export const JulesTool = Tool.define("jules", {
+interface JulesMetadata {
+  action: string
+  session?: string
+  session_id?: string
+  count?: number
+}
+
+export const JulesTool = Tool.define<typeof parameters, JulesMetadata>("jules", {
   description: DESCRIPTION,
   parameters,
   async execute(params, ctx) {
