@@ -28,7 +28,8 @@ function mockFetchResponse(body: unknown, status = 200) {
         headers: { "Content-Type": "application/json" },
       }),
     ),
-  )
+  ) as any as typeof globalThis.fetch &
+    ReturnType<typeof mock<() => Promise<Response>>>
 }
 
 function mockFetchError(status: number, text: string) {
@@ -39,7 +40,12 @@ function mockFetchError(status: number, text: string) {
         headers: { "Content-Type": "text/plain" },
       }),
     ),
-  )
+  ) as any as typeof globalThis.fetch &
+    ReturnType<typeof mock<() => Promise<Response>>>
+}
+
+function callArgs(fn: ReturnType<typeof mock>, index = 0): [string, RequestInit] {
+  return fn.mock.calls[index] as unknown as [string, RequestInit]
 }
 
 describe("jules.client", () => {
@@ -93,7 +99,7 @@ describe("jules.client", () => {
           await JulesClient.listSources()
 
           expect(fetchMock).toHaveBeenCalledTimes(1)
-          const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url, options] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sources")
           expect(options.headers).toEqual({
             "X-Goog-Api-Key": "test-api-key",
@@ -182,7 +188,7 @@ describe("jules.client", () => {
             requirePlanApproval: true,
           })
 
-          const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url, options] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions")
           expect(options.method).toBe("POST")
           const body = JSON.parse(options.body as string)
@@ -235,7 +241,7 @@ describe("jules.client", () => {
 
           await JulesClient.listSessions(5)
 
-          const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions?pageSize=5")
           Env.remove("JULES_API_KEY")
         },
@@ -252,7 +258,7 @@ describe("jules.client", () => {
 
           await JulesClient.listSessions()
 
-          const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions")
           Env.remove("JULES_API_KEY")
         },
@@ -273,7 +279,7 @@ describe("jules.client", () => {
 
           const activities = await JulesClient.getSessionActivities("sessions/abc", 10)
 
-          const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc/activities?pageSize=10")
           expect(activities).toHaveLength(1)
           expect(activities[0].type).toBe("plan")
@@ -309,7 +315,7 @@ describe("jules.client", () => {
 
           const session = await JulesClient.approvePlan("sessions/abc")
 
-          const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url, options] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc:approvePlan")
           expect(options.method).toBe("POST")
           expect(session.state).toBe("EXECUTING")
@@ -330,7 +336,7 @@ describe("jules.client", () => {
 
           await JulesClient.sendMessage("sessions/abc", "Please also update the tests")
 
-          const [url, options] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url, options] = callArgs(fetchMock)
           expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc:sendMessage")
           expect(options.method).toBe("POST")
           const body = JSON.parse(options.body as string)
@@ -462,7 +468,7 @@ describe("tool.jules", () => {
           expect(result.output).toContain("sessions/xyz")
           expect(result.output).toContain("Fix login")
 
-          const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string)
+          const body = JSON.parse((callArgs(fetchMock))[1].body as string)
           expect(body.sourceContext.source).toBe("sources/123")
           expect(body.sourceContext.githubRepoContext.startingBranch).toBe("main")
           expect(body.automationMode).toBe("AUTO_CREATE_PR")
@@ -539,7 +545,7 @@ describe("tool.jules", () => {
             ctx,
           )
 
-          const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string)
+          const body = JSON.parse((callArgs(fetchMock))[1].body as string)
           expect(body.sourceContext.source).toBe("sources/123")
           expect(body.sourceContext.githubRepoContext).toBeUndefined()
           Env.remove("JULES_API_KEY")
@@ -561,7 +567,7 @@ describe("tool.jules", () => {
             ctx,
           )
 
-          const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string)
+          const body = JSON.parse((callArgs(fetchMock))[1].body as string)
           expect(body.automationMode).toBeUndefined()
           Env.remove("JULES_API_KEY")
         },
@@ -625,7 +631,7 @@ describe("tool.jules", () => {
           const tool = await JulesTool.init()
           await tool.execute({ action: "list_sessions" as const, page_size: 3 }, ctx)
 
-          const [url] = fetchMock.mock.calls[0] as [string, RequestInit]
+          const [url] = callArgs(fetchMock)
           expect(url).toContain("pageSize=3")
           Env.remove("JULES_API_KEY")
         },
@@ -761,7 +767,7 @@ describe("tool.jules", () => {
           expect(result.output).toContain("Message sent")
 
           // Verify the API receives "prompt" not "message"
-          const body = JSON.parse((fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string)
+          const body = JSON.parse((callArgs(fetchMock))[1].body as string)
           expect(body.prompt).toBe("Also fix the tests")
           Env.remove("JULES_API_KEY")
         },
