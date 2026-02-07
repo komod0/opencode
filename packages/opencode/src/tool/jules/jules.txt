@@ -1,0 +1,19 @@
+Interact with Jules, Google's autonomous coding agent, to delegate tasks to a remote agent that can independently fix bugs, add features, write documentation, and create pull requests on GitHub repositories.
+
+Jules operates autonomously in isolated VMs - it clones repositories, installs dependencies, modifies code, and creates branches/PRs without requiring local resources.
+
+Available actions:
+  - list_sources: List connected GitHub repositories available for Jules tasks
+  - create_session: Start a new Jules task with a prompt and target repository
+  - list_sessions: View existing Jules sessions and their statuses
+  - get_activities: Check progress and activity log of a specific session
+  - approve_plan: Approve a pending plan that Jules has generated before it starts coding
+  - send_message: Send feedback or instructions to a running Jules session
+
+Usage notes:
+  - Requires a Jules API key (set JULES_API_KEY env var or configure in opencode settings)
+  - Jules works on GitHub repositories - the target repo must be connected in Jules
+  - For long-running or repository-wide tasks, Jules is ideal since it operates independently
+  - Jules generates a plan before coding - you can review and approve it
+  - Use this tool to delegate tasks that benefit from autonomous execution on remote repos
+  - Jules creates branches and can open PRs - complementary to local editing workflows
