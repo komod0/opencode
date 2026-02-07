@@ -60,7 +60,7 @@ describe("jules.client", () => {
   })
 
   test("uses correct base URL", () => {
-    expect(JulesClient.BASE_URL).toBe("https://julius.googleapis.com/v1alpha")
+    expect(JulesClient.BASE_URL).toBe("https://jules.googleapis.com/v1alpha")
   })
 
   describe("getApiKey", () => {
@@ -100,7 +100,7 @@ describe("jules.client", () => {
 
           expect(fetchMock).toHaveBeenCalledTimes(1)
           const [url, options] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sources")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sources")
           expect(options.headers).toEqual({
             "X-Goog-Api-Key": "test-api-key",
             "Content-Type": "application/json",
@@ -189,7 +189,7 @@ describe("jules.client", () => {
           })
 
           const [url, options] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions")
           expect(options.method).toBe("POST")
           const body = JSON.parse(options.body as string)
           expect(body.prompt).toBe("Fix the login bug")
@@ -242,7 +242,7 @@ describe("jules.client", () => {
           await JulesClient.listSessions(5)
 
           const [url] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions?pageSize=5")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions?pageSize=5")
           Env.remove("JULES_API_KEY")
         },
       })
@@ -259,7 +259,7 @@ describe("jules.client", () => {
           await JulesClient.listSessions()
 
           const [url] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions")
           Env.remove("JULES_API_KEY")
         },
       })
@@ -280,7 +280,7 @@ describe("jules.client", () => {
           const activities = await JulesClient.getSessionActivities("sessions/abc", 10)
 
           const [url] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc/activities?pageSize=10")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions/sessions/abc/activities?pageSize=10")
           expect(activities).toHaveLength(1)
           expect(activities[0].type).toBe("plan")
           expect(activities[0].content).toBe("Step 1")
@@ -316,7 +316,7 @@ describe("jules.client", () => {
           const session = await JulesClient.approvePlan("sessions/abc")
 
           const [url, options] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc:approvePlan")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions/sessions/abc:approvePlan")
           expect(options.method).toBe("POST")
           expect(session.state).toBe("EXECUTING")
           Env.remove("JULES_API_KEY")
@@ -337,7 +337,7 @@ describe("jules.client", () => {
           await JulesClient.sendMessage("sessions/abc", "Please also update the tests")
 
           const [url, options] = callArgs(fetchMock)
-          expect(url).toBe("https://julius.googleapis.com/v1alpha/sessions/sessions/abc:sendMessage")
+          expect(url).toBe("https://jules.googleapis.com/v1alpha/sessions/sessions/abc:sendMessage")
           expect(options.method).toBe("POST")
           const body = JSON.parse(options.body as string)
           expect(body.prompt).toBe("Please also update the tests")

@@ -5,7 +5,7 @@ import { Log } from "../../util/log"
 export namespace JulesClient {
   const log = Log.create({ service: "jules" })
 
-  export const BASE_URL = "https://julius.googleapis.com/v1alpha"
+  export const BASE_URL = "https://jules.googleapis.com/v1alpha"
 
   export interface Source {
     name: string
