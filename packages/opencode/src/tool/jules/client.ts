@@ -116,24 +116,31 @@ export namespace JulesClient {
     return result.sessions ?? []
   }
 
+  function normalizeSessionId(sessionId: string): string {
+    return sessionId.startsWith("sessions/") ? sessionId : `sessions/${sessionId}`
+  }
+
   export async function getSessionActivities(
     sessionId: string,
     pageSize?: number,
   ): Promise<Activity[]> {
+    const normalized = normalizeSessionId(sessionId)
     const params = pageSize ? `?pageSize=${pageSize}` : ""
     const result = await request<{ activities?: Activity[]; nextPageToken?: string }>(
       "GET",
-      `/sessions/${sessionId}/activities${params}`,
+      `/${normalized}/activities${params}`,
     )
     return result.activities ?? []
   }
 
   export async function approvePlan(sessionId: string): Promise<Session> {
-    return request<Session>("POST", `/sessions/${sessionId}:approvePlan`, {})
+    const normalized = normalizeSessionId(sessionId)
+    return request<Session>("POST", `/${normalized}:approvePlan`, {})
   }
 
   export async function sendMessage(sessionId: string, message: string): Promise<Session> {
-    return request<Session>("POST", `/sessions/${sessionId}:sendMessage`, {
+    const normalized = normalizeSessionId(sessionId)
+    return request<Session>("POST", `/${normalized}:sendMessage`, {
       prompt: message,
     })
   }

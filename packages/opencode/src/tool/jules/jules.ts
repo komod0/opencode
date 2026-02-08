@@ -31,7 +31,7 @@ const parameters = z.object({
     .boolean()
     .optional()
     .describe("Automatically create a pull request when the session completes (optional for create_session)"),
-  page_size: z.number().optional().describe("Number of results to return (optional for list operations)"),
+  page_size: z.number().int().positive().optional().describe("Number of results to return (optional for list operations)"),
 })
 
 interface JulesMetadata {
